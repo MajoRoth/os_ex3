@@ -35,6 +35,7 @@ void getJobState(JobHandle job, JobState* state){
 }
 
 void closeJobHandle(JobHandle job){
+    waitForJob(job);
     delete (MapReduceJob*)job;
 }
 
