@@ -40,9 +40,12 @@ public:
 
     MapReduceJob(const MapReduceClient& mapReduceClient, const InputVec& inputVec, const OutputVec& outputVec, int multiThreadLevel):
             client(mapReduceClient), inputVec(inputVec), outputVec(), multiThreadLevel(multiThreadLevel){
-        // EREL FILL
+        // TODO EREL FILL
     }
-};
+
+private:
+    void mutex_unlock();
+    void mutex_lock();
 
 
 #endif //OS_EX3_MAPREDUCEJOB_H
