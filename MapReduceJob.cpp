@@ -27,6 +27,7 @@ MapReduceJob::MapReduceJob(const MapReduceClient& mapReduceClient, const InputVe
 {
     threads = new pthread_t[multiThreadLevel];
     contexts = new ThreadContext[multiThreadLevel];
+    size = inputVec.size();
 
     for (int tid = 0; tid < multiThreadLevel; tid++)
     {
@@ -84,4 +85,33 @@ void *MapReduceJob::thread_wrapper(void *input) {
 
     mapReduceJob->mutex_unlock();
     return threadContext;
+}
+
+float MapReduceJob::getPercentage() {
+    switch (jobState.stage) {
+        case UNDEFINED_STAGE:
+            return 0;
+        case MAP_STAGE:
+            return (inputVec.size() / size) * 100;
+        case SHUFFLE_STAGE:
+            return (getIntermediateVecLen() / size) * 100;
+        case REDUCE_STAGE:
+            return (getIntermediateMapLen() / size) * 100;
+    }
+}
+
+int MapReduceJob::getIntermediateMapLen() {
+    int size = 0;
+    for (auto &vec:  intermediateMap){
+        size += vec.second->size();
+    }
+    return size;
+}
+
+int MapReduceJob::getIntermediateVecLen() {
+    int size = 0;
+    for (int i=0; i < multiThreadLevel; i++) {
+        size += contexts[i].intermediateVec.size();
+    }
+    return size;
 }

@@ -54,7 +54,18 @@ public:
 
     // setters
     void setJobStage(stage_t stage){
+        mutex_lock();
         jobState.stage = stage;
+        switch (jobState.stage) {
+            case MAP_STAGE:
+                size = inputVec.size();
+            case SHUFFLE_STAGE:
+                size = getIntermediateVecLen();
+            case REDUCE_STAGE:
+                size = getIntermediateMapLen();
+        }
+
+        mutex_unlock();
     }
 
     // getters
@@ -71,6 +82,7 @@ public:
     int getMultiThreadLevel(){
         return multiThreadLevel;
     }
+    float getPercentage();
 
 
     InputPair popInputPair(){
@@ -86,6 +98,9 @@ private:
     void mutex_lock();
     void apply_barrier();
     static void *thread_wrapper(void *input);
+
+    int getIntermediateMapLen();
+    int getIntermediateVecLen();
 };
 
 
