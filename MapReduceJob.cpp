@@ -17,12 +17,11 @@ void MapReduceJob::mutex_unlock() {
 MapReduceJob::MapReduceJob(const MapReduceClient& mapReduceClient, const InputVec& inputVec,
                            const OutputVec& outputVec, int multiThreadLevel)
                            : client(mapReduceClient), inputVec(inputVec), outputVec(outputVec),
-                           multiThreadLevel(multiThreadLevel), mutex(PTHREAD_MUTEX_INITIALIZER)
+                           multiThreadLevel(multiThreadLevel), mutex(PTHREAD_MUTEX_INITIALIZER),
+                           barrier(multiThreadLevel), jobState({UNDEFINED_STAGE, 0})
 {
     threads = new pthread_t[multiThreadLevel];
     contexts = new ThreadContext[multiThreadLevel];
-    jobState = {UNDEFINED_STAGE, 0};
-    barrier = Barrier(multiThreadLevel);
 
     for (int tid = 0; tid < multiThreadLevel; tid++)
     {
