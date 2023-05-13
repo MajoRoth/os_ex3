@@ -22,10 +22,10 @@ void *MapReduceJob::thread_wrapper(void *input) {
     while (!mapReduceJob->inputVec.empty()){
         auto inputPair = mapReduceJob->popInputPair();
         mapReduceJob->mutex_unlock();
-        MapReduceJob->client->map(inputPair.first, inputPair.second, threadContext);
+        mapReduceJob->getClient().map(inputPair.first, inputPair.second, threadContext);
         mapReduceJob->mutex_lock();
     }
-    mutex_unlock(&mutex);
+    mapReduceJob->mutex_unlock();
 
     // when map process is done IN ALL THREADS - proceed
     jobContext->barrier->barrier();

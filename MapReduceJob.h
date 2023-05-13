@@ -67,6 +67,7 @@ public:
 private:
     void mutex_unlock();
     void mutex_lock();
+    void barrier();
     static void *thread_wrapper(void *input);
 };
 
