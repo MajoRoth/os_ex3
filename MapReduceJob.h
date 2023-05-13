@@ -2,9 +2,7 @@
 // Created by amitroth on 5/13/23.
 //
 #include <map>
-#include <pthread.h>
 #include <iostream>
-#include <memory>
 #include <atomic>
 
 #include "Barrier.h"
@@ -19,9 +17,9 @@ class MapReduceJob;
 
 class ThreadContext {
 public:
+    int id;
     IntermediateVec intermediateVec;
     MapReduceJob *mapReduceJob;
-    int id;
 
     ThreadContext(int id, MapReduceJob *map) : id(id), mapReduceJob(map) {};
     ThreadContext() = default;
@@ -40,11 +38,11 @@ public:
 
 private:
     int multiThreadLevel;
-    JobState jobState;
     pthread_t *threads;
     ThreadContext *contexts;
     pthread_mutex_t mutex;
     Barrier barrier;
+    JobState jobState;
     std::atomic<int> size;
 
 
@@ -60,12 +58,17 @@ public:
         mutex_lock();
         jobState.stage = stage;
         switch (jobState.stage) {
+            case UNDEFINED_STAGE:
+                break;
             case MAP_STAGE:
                 size = inputVec.size();
+                break;
             case SHUFFLE_STAGE:
                 size = getIntermediateVecLen();
+                break;
             case REDUCE_STAGE:
                 size = getIntermediateMapLen();
+                break;
         }
 
         mutex_unlock();

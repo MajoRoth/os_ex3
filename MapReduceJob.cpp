@@ -5,7 +5,7 @@
 #include "MapReduceJob.h"
 #include "utils.h"
 
-#include <memory>
+#include <pthread.h>
 
 void MapReduceJob::mutex_lock() {
     if(pthread_mutex_lock(&mutex)){
@@ -102,6 +102,7 @@ float MapReduceJob::getPercentage() const{
         case REDUCE_STAGE:
             return (getIntermediateMapLen() / size) * 100;
     }
+    return 0;
 }
 
 int MapReduceJob::getIntermediateMapLen() const{
@@ -125,4 +126,8 @@ void MapReduceJob::waitForJob() {
     {
         pthread_join(threads[tid], nullptr);
     }
+}
+
+void MapReduceJob::apply_barrier() {
+    barrier.barrier();
 }

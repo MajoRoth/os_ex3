@@ -23,7 +23,7 @@ void emit3 (K3* key, V3* value, void* context){
 }
 
 JobHandle startMapReduceJob(const MapReduceClient& client, const InputVec& inputVec, OutputVec& outputVec, int multiThreadLevel){
-    new MapReduceJob(client, inputVec, outputVec, multiThreadLevel);
+    return new MapReduceJob(client, inputVec, outputVec, multiThreadLevel);
 }
 
 void waitForJob(JobHandle job){
