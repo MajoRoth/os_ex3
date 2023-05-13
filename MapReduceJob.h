@@ -62,6 +62,10 @@ public:
     stage_t getJobStage() const{
         return jobState.stage;
     }
+    JobState getJobState() const
+    {
+        return jobState;
+    }
     int getMultiThreadLevel(){
         return multiThreadLevel;
     }

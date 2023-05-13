@@ -32,30 +32,7 @@ void emit3 (K3* key, V3* value, void* context){
 }
 
 JobHandle startMapReduceJob(const MapReduceClient& client, const InputVec& inputVec, OutputVec& outputVec, int multiThreadLevel){
-    JobContext jobContext;
-    jobContext.multiThreadLevel = multiThreadLevel;
-    jobContext.jobState = {UNDEFINED_STAGE, 0};
-    jobContext.threads = std::unique_ptr<pthread_t[]>(new pthread_t[multiThreadLevel]);
-    jobContext.barrier = std::unique_ptr<Barrier>(new Barrier(multiThreadLevel));
-
-    // split inputs and create threads
-    for (int i=0; i < multiThreadLevel; i++){
-        std::cout << "Created Thread: " << i << std::endl;
-        ThreadContext threadContext;
-        threadContext.jobContext = &jobContext;
-        threadContext.id = i;
-        // need to do manipulation with casting
-        // erel - maybe need to save context array
-        if(pthread_create(&jobContext.threads[i], NULL, thread_wrapper, threadContext)){
-            // error
-        }
-
-    }
-
-    jobsVector.push_back(jobContext);
-
-
-    return &jobContext; //cast: note that you need to ive ponter from the vector
+    new MapReduceJob(client, inputVec, outputVec, multiThreadLevel);
 }
 
 void waitForJob(JobHandle job){
@@ -63,7 +40,7 @@ void waitForJob(JobHandle job){
 }
 
 void getJobState(JobHandle job, JobState* state){
-    // returns JobState
+    *state = ((MapReduceJob*)job)->getJobState();
 }
 
 void closeJobHandle(JobHandle job){
