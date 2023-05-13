@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <iostream>
 #include <memory>
+#include <atomic>
 
 #include "Barrier.h"
 
@@ -44,6 +45,7 @@ private:
     ThreadContext *contexts;
     pthread_mutex_t mutex;
     Barrier barrier;
+    std::atomic<int> size;
 
 
 public:

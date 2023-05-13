@@ -3,15 +3,20 @@
 //
 #include "MapReduceFramework.h"
 #include "MapReduceJob.h"
+#include "utils.h"
 
 #include <memory>
 
 void MapReduceJob::mutex_lock() {
-    pthread_mutex_lock(&mutex);
+    if(pthread_mutex_lock(&mutex)){
+        error(SYS_ERR, "pthread mutex lock");
+    }
 }
 
 void MapReduceJob::mutex_unlock() {
-    pthread_mutex_lock(&mutex);
+    if(pthread_mutex_lock(&mutex)){
+        error(SYS_ERR, "pthread mutex unlock");
+    }
 }
 
 MapReduceJob::MapReduceJob(const MapReduceClient& mapReduceClient, const InputVec& inputVec,
