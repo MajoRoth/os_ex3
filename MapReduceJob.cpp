@@ -33,8 +33,12 @@ MapReduceJob::MapReduceJob(const MapReduceClient& mapReduceClient, const InputVe
         contexts[tid] = ThreadContext(tid, this);
         pthread_create(threads + tid, nullptr, thread_wrapper, contexts + tid);
     }
-
-
+}
+MapReduceJob::~MapReduceJob()
+{
+    //todo: what else?
+    delete[] threads;
+    delete[] contexts;
 }
 
 void *MapReduceJob::thread_wrapper(void *input) {
