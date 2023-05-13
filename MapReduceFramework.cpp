@@ -44,7 +44,7 @@ void getJobState(JobHandle job, JobState* state){
 }
 
 void closeJobHandle(JobHandle job){
-    // remove from the vector
+    delete (MapReduceJob*)job;
 }
 
 
