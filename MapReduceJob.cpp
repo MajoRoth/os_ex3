@@ -25,14 +25,12 @@ void *MapReduceJob::thread_wrapper(void *input) {
         mapReduceJob->getClient().map(inputPair.first, inputPair.second, threadContext);
         mapReduceJob->mutex_lock();
     }
-    mapReduceJob->mutex_unlock();
+    mapReduceJob->mutex_unlock(); // Finished Map
 
-    // when map process is done IN ALL THREADS - proceed
-    jobContext->barrier->barrier();
-    // shufle - only 1 thread
-    if (threadContext->id == 0){
+    mapReduceJob->apply_barrier(); // Applying barrier to perform shuffle
+    if (threadContext->getId() == 0){
         // Shuffle
-        for (int i=0; i < jobContext->multiThreadLevel; i++){
+        for (int i=0; i < mapReduceJob->getMultiThreadLevel(); i++){
 
         }
     }

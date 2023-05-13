@@ -23,6 +23,10 @@ public:
     int id;
 
     ThreadContext(int id, MapReduceJob *map) : id(id), mapReduceJob(map) {};
+
+    int getId(){
+        return id;
+    }
 };
 
 class MapReduceJob {
@@ -55,6 +59,10 @@ public:
     stage_t getJobStage() const{
         return job_state.stage;
     }
+    int getMultiThreadLevel(){
+        return multiThreadLevel;
+    }
+
 
     InputPair popInputPair(){
         auto inputPair = inputVec.back();
