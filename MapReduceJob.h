@@ -78,14 +78,15 @@ public:
     stage_t getJobStage() const{
         return jobState.stage;
     }
-    JobState getJobState() const
+    JobState getJobState()
     {
+        jobState.percentage = getPercentage();
         return jobState;
     }
     int getMultiThreadLevel(){
         return multiThreadLevel;
     }
-    float getPercentage();
+    float getPercentage() const;
 
 
     InputPair popInputPair(){
@@ -102,8 +103,8 @@ private:
     void apply_barrier();
     static void *thread_wrapper(void *input);
 
-    int getIntermediateMapLen();
-    int getIntermediateVecLen();
+    int getIntermediateMapLen() const;
+    int getIntermediateVecLen() const;
 };
 
 

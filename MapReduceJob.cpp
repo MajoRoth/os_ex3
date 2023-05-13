@@ -91,7 +91,7 @@ void *MapReduceJob::thread_wrapper(void *input) {
     return threadContext;
 }
 
-float MapReduceJob::getPercentage() {
+float MapReduceJob::getPercentage() const{
     switch (jobState.stage) {
         case UNDEFINED_STAGE:
             return 0;
@@ -104,7 +104,7 @@ float MapReduceJob::getPercentage() {
     }
 }
 
-int MapReduceJob::getIntermediateMapLen() {
+int MapReduceJob::getIntermediateMapLen() const{
     int size = 0;
     for (auto &vec:  intermediateMap){
         size += vec.second->size();
@@ -112,7 +112,7 @@ int MapReduceJob::getIntermediateMapLen() {
     return size;
 }
 
-int MapReduceJob::getIntermediateVecLen() {
+int MapReduceJob::getIntermediateVecLen() const{
     int size = 0;
     for (int i=0; i < multiThreadLevel; i++) {
         size += contexts[i].intermediateVec.size();
