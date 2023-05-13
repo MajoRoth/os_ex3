@@ -50,13 +50,34 @@ void *MapReduceJob::thread_wrapper(void *input) {
     mapReduceJob->mutex_unlock(); // Finished Map
 
     mapReduceJob->apply_barrier(); // Applying barrier to perform shuffle
+    mapReduceJob->setJobStage(SHUFFLE_STAGE);
     if (threadContext->getId() == 0){
         // Shuffle
         for (int i=0; i < mapReduceJob->getMultiThreadLevel(); i++){
-
+            IntermediateVec intermediateVec = mapReduceJob->contexts[i].intermediateVec;
+            for (auto pair: intermediateVec) {
+                if (mapReduceJob->intermediateMap.find(pair.first) == mapReduceJob->intermediateMap.end()){
+                    mapReduceJob->intermediateMap.insert({
+                        pair.first,
+                        new IntermediateVec ()
+                    });
+                }
+                mapReduceJob->intermediateMap[pair.first]->push_back(pair);
+            }
         }
     }
 
-    // reduce - takes <k2, v2> form intermediat, process it and save in output vec
-    return input;
+    mapReduceJob->apply_barrier(); // Starting Reduce
+    mapReduceJob->setJobStage(REDUCE_STAGE);
+    mapReduceJob->mutex_lock();
+    while (!mapReduceJob->intermediateMap.empty()){
+        auto intermediatePair = mapReduceJob->intermediateMap.begin();
+        mapReduceJob->intermediateMap.erase(mapReduceJob->intermediateMap.begin());
+        mapReduceJob->mutex_unlock();
+        mapReduceJob->getClient().reduce(intermediatePair->second, threadContext);
+        mapReduceJob->mutex_lock();
+    }
+
+    mapReduceJob->mutex_unlock();
+    return threadContext;
 }
