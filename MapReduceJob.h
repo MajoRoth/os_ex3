@@ -53,6 +53,8 @@ public:
                  const OutputVec& outputVec, int multiThreadLevel);
     ~MapReduceJob();
 
+    void waitForJob();
+
     // setters
     void setJobStage(stage_t stage){
         jobState.stage = stage;

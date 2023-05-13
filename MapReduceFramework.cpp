@@ -27,11 +27,11 @@ JobHandle startMapReduceJob(const MapReduceClient& client, const InputVec& input
 }
 
 void waitForJob(JobHandle job){
-    // send to pthreads join - the thread from JobsVector[job]
+    static_cast<MapReduceJob*>(job)->waitForJob();
 }
 
 void getJobState(JobHandle job, JobState* state){
-    *state = ((MapReduceJob*)job)->getJobState();
+    *state = static_cast<MapReduceJob*>(job)->getJobState();
 }
 
 void closeJobHandle(JobHandle job){

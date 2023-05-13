@@ -89,3 +89,10 @@ void *MapReduceJob::thread_wrapper(void *input) {
     mapReduceJob->mutex_unlock();
     return threadContext;
 }
+
+void MapReduceJob::waitForJob() {
+    for (int tid = 0; tid < multiThreadLevel; tid++)
+    {
+        pthread_join(threads[tid], nullptr);
+    }
+}
