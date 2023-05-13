@@ -1,7 +1,10 @@
 //
 // Created by amitroth on 5/13/23.
 //
+#include "MapReduceFramework.h"
 #include "MapReduceJob.h"
+
+#include <memory>
 
 void MapReduceJob::mutex_lock() {
     pthread_mutex_lock(&mutex);
@@ -9,6 +12,25 @@ void MapReduceJob::mutex_lock() {
 
 void MapReduceJob::mutex_unlock() {
     pthread_mutex_lock(&mutex);
+}
+
+MapReduceJob::MapReduceJob(const MapReduceClient& mapReduceClient, const InputVec& inputVec,
+                           const OutputVec& outputVec, int multiThreadLevel)
+                           : client(mapReduceClient), inputVec(inputVec), outputVec(outputVec),
+                           multiThreadLevel(multiThreadLevel), mutex(PTHREAD_MUTEX_INITIALIZER)
+{
+    threads = new pthread_t[multiThreadLevel];
+    contexts = new ThreadContext[multiThreadLevel];
+    jobState = {UNDEFINED_STAGE, 0};
+    barrier = Barrier(multiThreadLevel);
+
+    for (int tid = 0; tid < multiThreadLevel; tid++)
+    {
+        contexts[tid] = ThreadContext(tid, this);
+        pthread_create(threads + tid, nullptr, thread_wrapper, contexts + tid);
+    }
+
+
 }
 
 void *MapReduceJob::thread_wrapper(void *input) {

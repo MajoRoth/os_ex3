@@ -34,7 +34,7 @@ void emit3 (K3* key, V3* value, void* context){
 JobHandle startMapReduceJob(const MapReduceClient& client, const InputVec& inputVec, OutputVec& outputVec, int multiThreadLevel){
     JobContext jobContext;
     jobContext.multiThreadLevel = multiThreadLevel;
-    jobContext.job_state = {UNDEFINED_STAGE, 0};
+    jobContext.jobState = {UNDEFINED_STAGE, 0};
     jobContext.threads = std::unique_ptr<pthread_t[]>(new pthread_t[multiThreadLevel]);
     jobContext.barrier = std::unique_ptr<Barrier>(new Barrier(multiThreadLevel));
 
@@ -103,7 +103,7 @@ void *thread_wrapper(void *input){
     auto threadContext = (ThreadContext *) input;
     auto mutex = threadContext->jobContext->mutex;
     auto jobContext =  threadContext->jobContext;
-    jobContext->job_state.stage = MAP_STAGE;
+    jobContext->jobState.stage = MAP_STAGE;
     mutex_lock(&mutex);
     while (jobContext->inputVec.empty()){
         auto inputPair = jobContext->inputVec.back();
