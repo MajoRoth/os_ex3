@@ -43,7 +43,7 @@ private:
     pthread_mutex_t mutex;
     Barrier barrier;
     JobState jobState;
-    std::atomic<int> size;
+    std::atomic<unsigned int> atomicCounter;
 
 
 public:
@@ -54,25 +54,7 @@ public:
     void waitForJob();
 
     // setters
-    void setJobStage(stage_t stage){
-        mutex_lock();
-        jobState.stage = stage;
-        switch (jobState.stage) {
-            case UNDEFINED_STAGE:
-                break;
-            case MAP_STAGE:
-                size = inputVec.size();
-                break;
-            case SHUFFLE_STAGE:
-                size = getIntermediateVecLen();
-                break;
-            case REDUCE_STAGE:
-                size = getIntermediateMapLen();
-                break;
-        }
-
-        mutex_unlock();
-    }
+    void setJobStage(stage_t stage);
 
     // getters
     const MapReduceClient &getClient() const{
@@ -89,7 +71,7 @@ public:
     int getMultiThreadLevel(){
         return multiThreadLevel;
     }
-    float getPercentage() const;
+    float getPercentage();
 
 
     InputPair popInputPair(){
@@ -108,6 +90,34 @@ private:
 
     int getIntermediateMapLen() const;
     int getIntermediateVecLen() const;
+
+
+//    stage_t getAtomicStage(){
+//        unsigned long long MASK = 3;
+//        return (stage_t) (atomic_variable & MASK);
+//    }
+//    int getAtomicSize(){
+//        unsigned long long MASK = 8589934588;
+//        return (stage_t) (atomic_variable & MASK) >> 2;
+//    }
+//    int getAtomicCurrentSize(){
+//        unsigned long long MASK = 18446744065119617024;
+//        return (stage_t) (atomic_variable & MASK) >> 33;
+//    }
+//
+//    int incAtomicCurrentSize(){
+//
+//    }
+//
+//    void setAtomicStage(stage_t stage){
+//
+//    }
+//    void setAtomicSize(){
+//
+//    }
+//    void setAtomicCurrentSize(){
+//
+//    }
 };
 
 

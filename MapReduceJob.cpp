@@ -7,13 +7,13 @@
 
 #include <pthread.h>
 
-void MapReduceJob::mutex_lock() {
+void MapReduceJob::mutex_lock(){
     if(pthread_mutex_lock(&mutex)){
         error(SYS_ERR, "pthread mutex lock");
     }
 }
 
-void MapReduceJob::mutex_unlock() {
+void MapReduceJob::mutex_unlock(){
     if(pthread_mutex_lock(&mutex)){
         error(SYS_ERR, "pthread mutex unlock");
     }
@@ -91,18 +91,24 @@ void *MapReduceJob::thread_wrapper(void *input) {
     return threadContext;
 }
 
-float MapReduceJob::getPercentage() const{
+float MapReduceJob::getPercentage(){
+    mutex_lock();
+    float p = 0;
     switch (jobState.stage) {
         case UNDEFINED_STAGE:
-            return 0;
+            break;
         case MAP_STAGE:
-            return (inputVec.size() / size) * 100;
+            p = (inputVec.size() / getAtomicCurrentSize()) * 100;
+            break;
         case SHUFFLE_STAGE:
-            return (getIntermediateVecLen() / size) * 100;
+            p = (getIntermediateVecLen() / getAtomicCurrentSize()) * 100;
+            break;
         case REDUCE_STAGE:
-            return (getIntermediateMapLen() / size) * 100;
+            p = (getIntermediateMapLen() / getAtomicCurrentSize()) * 100;
+            break;
     }
-    return 0;
+    mutex_unlock();
+    return p;
 }
 
 int MapReduceJob::getIntermediateMapLen() const{
@@ -131,3 +137,24 @@ void MapReduceJob::waitForJob() {
 void MapReduceJob::apply_barrier() {
     barrier.barrier();
 }
+
+void MapReduceJob::setJobStage(stage_t stage) {
+    mutex_lock();
+    setAtomicStage(stage);
+    jobState.stage = stage;
+    switch (jobState.stage) {
+        case UNDEFINED_STAGE:
+            break;
+        case MAP_STAGE:
+            setAtomicSize(inputVec.size());
+            break;
+        case SHUFFLE_STAGE:
+            setAtomicSize(getIntermediateVecLen());
+            break;
+        case REDUCE_STAGE:
+            setAtomicSize(getIntermediateMapLen());
+            break;
+    }
+    mutex_unlock();
+}
+
