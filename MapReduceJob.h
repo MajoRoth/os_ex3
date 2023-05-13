@@ -43,10 +43,31 @@ public:
         // TODO EREL FILL
     }
 
+    // setters
+    void setJobStage(stage_t stage){
+        job_state.stage = stage;
+    }
+
+    // getters
+    const MapReduceClient &getClient() const{
+        return client;
+    }
+    stage_t getJobStage() const{
+        return job_state.stage;
+    }
+
+    InputPair popInputPair(){
+        auto inputPair = inputVec.back();
+        inputVec.pop_back();
+        return inputPair;
+    }
+
+
+
 private:
     void mutex_unlock();
-
     void mutex_lock();
+    static void *thread_wrapper(void *input);
 };
 
 

@@ -14,9 +14,6 @@
 
 enum ERR{SYS_ERR, UTHREADS_ERR};
 
-std::vector<JobContext> jobsVector;
-
-
 int error(ERR err, const std::string& text);
 void *thread_wrapper(void *input);
 
