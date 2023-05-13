@@ -9,6 +9,7 @@
 #include "Barrier.h"
 
 #include "MapReduceFramework.h"
+#include "MapReduceJob.h"
 
 
 enum ERR{SYS_ERR, UTHREADS_ERR};
@@ -30,7 +31,7 @@ void emit2 (K2* key, V2* value, void* context){
 
 void emit3 (K3* key, V3* value, void* context){
     auto threadContext = (ThreadContext *) context;
-    threadContext->jobContext->outputVec.push_back(OutputPair(key, value));
+    threadContext->mapReduceJob->outputVec.push_back(OutputPair(key, value));
 }
 
 JobHandle startMapReduceJob(const MapReduceClient& client, const InputVec& inputVec, OutputVec& outputVec, int multiThreadLevel){
