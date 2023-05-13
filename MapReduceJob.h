@@ -51,6 +51,9 @@ private:
 public:
     MapReduceJob(const MapReduceClient& mapReduceClient, const InputVec& inputVec,
                  const OutputVec& outputVec, int multiThreadLevel);
+    ~MapReduceJob();
+
+    void waitForJob();
 
     // setters
     void setJobStage(stage_t stage){
