@@ -27,6 +27,7 @@ public:
     int getId(){
         return id;
     }
+    ThreadContext() = default;
 };
 
 class MapReduceJob {
@@ -36,16 +37,14 @@ public:
     OutputVec outputVec;
     int multiThreadLevel;
 
-    JobState job_state;
-    std::unique_ptr<pthread_t[]> threads;
+    JobState jobState;
+    pthread_t *threads;
+    ThreadContext *contexts;
     pthread_mutex_t mutex;
-    std::unique_ptr<Barrier> barrier;
+    Barrier barrier;
 
-    MapReduceJob(const MapReduceClient &mapReduceClient, const InputVec &inputVec, const OutputVec &outputVec,
-                 int multiThreadLevel) :
-            client(mapReduceClient), inputVec(inputVec), outputVec(), multiThreadLevel(multiThreadLevel) {
-        // TODO EREL FILL
-    }
+    MapReduceJob(const MapReduceClient& mapReduceClient, const InputVec& inputVec,
+                 const OutputVec& outputVec, int multiThreadLevel);
 
     // setters
     void setJobStage(stage_t stage){
