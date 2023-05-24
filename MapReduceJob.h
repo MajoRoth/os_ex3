@@ -6,7 +6,7 @@
 #include <atomic>
 
 #include "Barrier.h"
-
+#include <pthread.h>
 #include "MapReduceFramework.h"
 
 
@@ -43,7 +43,7 @@ private:
     pthread_mutex_t mutex;
     Barrier barrier;
     JobState jobState;
-    std::atomic<unsigned int> atomicCounter;
+    std::atomic<uint64_t> progress;
 
 
 public:
@@ -88,8 +88,8 @@ private:
     void apply_barrier();
     static void *thread_wrapper(void *input);
 
-    int getIntermediateMapLen() const;
-    int getIntermediateVecLen() const;
+    int getIntermediateMapLen();
+    int getIntermediateVecLen();
 
 
 //    stage_t getAtomicStage(){

@@ -3,6 +3,7 @@
 #include <string>
 #include <array>
 #include <unistd.h>
+#include <iostream>
 
 class VString : public V1 {
 public:
@@ -68,9 +69,12 @@ public:
 
 int main(int argc, char** argv)
 {
+    printf("here");
+    std::cout << "here";
 	CounterClient client;
 	InputVec inputVec;
 	OutputVec outputVec;
+
 	VString s1("This string is full of characters");
 	VString s2("Multithreading is awesome");
 	VString s3("race conditions are bad");
