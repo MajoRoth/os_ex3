@@ -18,7 +18,7 @@
 #define PROGRESS_GET_CURRENT(x) (x.load()>>31 & BIT_31_MASK)
 #define PROGRESS_GET_STATE(x) (x.load()>>62)
 
-#define PROGRESS_INC_CURRENT(x) (x += (1 << 31))
+#define PROGRESS_INC_CURRENT(x) (x += 0x80000000)
 #define PROGRESS_SET(x, state, current, total) (x = (static_cast<uint64_t>(state)<<62) + (static_cast<uint64_t>(current)<<31) + total)
 
 
@@ -110,12 +110,13 @@ void *MapReduceJob::thread_wrapper(void *input) {
             }
         }
     }
-
+    mapReduceJob->apply_barrier();
     //
     //  REDUCE
     //
     if (threadContext->getId() == 0)
     {
+        std::cout <<"reduce" << std::endl;
         PROGRESS_SET(threadContext->mapReduceJob->progress, REDUCE_STAGE, 0, threadContext->mapReduceJob->getIntermediateMapLen());
     }
     mapReduceJob->apply_barrier();
@@ -123,14 +124,18 @@ void *MapReduceJob::thread_wrapper(void *input) {
     mapReduceJob->mutex_lock();
     while (!mapReduceJob->intermediateMap.empty()){
         auto intermediatePair = mapReduceJob->intermediateMap.begin();
-        mapReduceJob->intermediateMap.erase(mapReduceJob->intermediateMap.begin());
+        mapReduceJob->intermediateMap.erase(intermediatePair);
         mapReduceJob->mutex_unlock();
         mapReduceJob->getClient().reduce(intermediatePair->second, threadContext);
         mapReduceJob->mutex_lock();
         PROGRESS_INC_CURRENT(threadContext->mapReduceJob->progress);
     }
 
+    // DEBUG FUNCTIONS THAT PRINTS INTERMIDATE VECTOR, INTERMEDIATE MAP
+
+
     mapReduceJob->mutex_unlock();
+    mapReduceJob->apply_barrier();
     return threadContext;
 }
 
