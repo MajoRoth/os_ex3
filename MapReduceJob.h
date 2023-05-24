@@ -63,11 +63,8 @@ public:
     stage_t getJobStage() const{
         return jobState.stage;
     }
-    JobState getJobState()
-    {
-        jobState.percentage = getPercentage();
-        return jobState;
-    }
+    JobState getJobState();
+
     int getMultiThreadLevel(){
         return multiThreadLevel;
     }

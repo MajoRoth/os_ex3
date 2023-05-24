@@ -69,8 +69,6 @@ public:
 
 int main(int argc, char** argv)
 {
-    printf("here");
-    std::cout << "here";
 	CounterClient client;
 	InputVec inputVec;
 	OutputVec outputVec;
@@ -78,6 +76,7 @@ int main(int argc, char** argv)
 	VString s1("This string is full of characters");
 	VString s2("Multithreading is awesome");
 	VString s3("race conditions are bad");
+    std::cout << "initialized s1..3." << std::endl;
 	inputVec.push_back({nullptr, &s1});
 	inputVec.push_back({nullptr, &s2});
 	inputVec.push_back({nullptr, &s3});

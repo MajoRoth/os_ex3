@@ -18,7 +18,7 @@
 #define PROGRESS_GET_CURRENT(x) (x.load()>>31 & BIT_31_MASK)
 #define PROGRESS_GET_STATE(x) (x.load()>>62)
 
-#define PROGRESS_INC_CURRENT(x) (x += 1 << 31)
+#define PROGRESS_INC_CURRENT(x) (x += (1 << 31))
 #define PROGRESS_SET(x, state, current, total) (x = (static_cast<uint64_t>(state)<<62) + (static_cast<uint64_t>(current)<<31) + total)
 
 
@@ -30,7 +30,7 @@ void MapReduceJob::mutex_lock(){
 }
 
 void MapReduceJob::mutex_unlock(){
-    if(pthread_mutex_lock(&mutex)){
+    if(pthread_mutex_unlock(&mutex)){
         error(SYS_ERR, "pthread mutex unlock");
     }
 }
@@ -177,4 +177,17 @@ void MapReduceJob::waitForJob() {
 
 void MapReduceJob::apply_barrier() {
     barrier.barrier();
+}
+
+JobState MapReduceJob::getJobState() {
+     jobState.stage = static_cast<stage_t>(PROGRESS_GET_STATE(progress));
+     if (jobState.stage == UNDEFINED_STAGE)
+     {
+         jobState.percentage = 0;
+     }
+     else
+     {
+         jobState.percentage = static_cast<float>(100) * PROGRESS_GET_CURRENT(progress) / PROGRESS_GET_TOTAL(progress);
+     }
+     return jobState;
 }
