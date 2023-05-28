@@ -133,12 +133,18 @@ void *MapReduceJob::thread_wrapper(void *input) {
         mapReduceJob->getClient().reduce(intermediatePair->second, threadContext);
         mapReduceJob->mutex_lock();
         PROGRESS_INC_CURRENT(threadContext->mapReduceJob->progress);
-        mapReduceJob->debug();
     }
 
+    mapReduceJob->apply_barrier();
+    if (threadContext->getId() == 0)
+    {
+        mapReduceJob->debug();
+        // DEBUG FUNCTIONS THAT PRINTS INTERMIDATE VECTOR, INTERMEDIATE MAP
+    }
+    mapReduceJob->apply_barrier();
 
-    mapReduceJob->debug();
-    // DEBUG FUNCTIONS THAT PRINTS INTERMIDATE VECTOR, INTERMEDIATE MAP
+
+
 
 
     mapReduceJob->mutex_unlock();
