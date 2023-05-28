@@ -4,6 +4,8 @@
 #include "MapReduceFramework.h"
 #include "MapReduceJob.h"
 #include "utils.h"
+#include "MapReduceClient.h"
+
 
 //#include <pthread.h>
 
@@ -116,6 +118,8 @@ void *MapReduceJob::thread_wrapper(void *input) {
     //
     if (threadContext->getId() == 0)
     {
+        mapReduceJob->debug();
+
         std::cout <<"reduce" << std::endl;
         PROGRESS_SET(threadContext->mapReduceJob->progress, REDUCE_STAGE, 0, threadContext->mapReduceJob->getIntermediateMapLen());
     }
@@ -129,8 +133,11 @@ void *MapReduceJob::thread_wrapper(void *input) {
         mapReduceJob->getClient().reduce(intermediatePair->second, threadContext);
         mapReduceJob->mutex_lock();
         PROGRESS_INC_CURRENT(threadContext->mapReduceJob->progress);
+        mapReduceJob->debug();
     }
 
+
+    mapReduceJob->debug();
     // DEBUG FUNCTIONS THAT PRINTS INTERMIDATE VECTOR, INTERMEDIATE MAP
 
 
@@ -195,4 +202,16 @@ JobState MapReduceJob::getJobState() {
          jobState.percentage = static_cast<float>(100) * PROGRESS_GET_CURRENT(progress) / PROGRESS_GET_TOTAL(progress);
      }
      return jobState;
+}
+
+
+void MapReduceJob::debug() {
+    std::cout << "DEBUG" << std::endl;
+    for (const auto& pair: intermediateMap) {
+        std::cout << static_cast<KChar *>(pair.first)->c << std::endl;
+        for (const auto& int_pair: *pair.second){
+            std::cout << "(" << static_cast<KChar *>(int_pair.first)->c << ", " << static_cast<VCount *>(int_pair.second)->count << "), ";
+        }
+        std::cout << std::endl << "-------------" << std::endl;
+    }
 }
