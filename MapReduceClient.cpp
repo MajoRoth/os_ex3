@@ -91,16 +91,16 @@ int main(int argc, char** argv)
             printf("stage %d, %f%% \n", 
 			state.stage, state.percentage);
         }
-		usleep(100000);
+		usleep(1000);
         last_state = state;
 		getJobState(job, &state);
 	}
 	printf("stage %d, %f%% \n", 
 			state.stage, state.percentage);
 	printf("Done!\n");
-	
-	closeJobHandle(job);
-	
+    std::cout << "outputVec Legnth: " << outputVec.size() << std::endl;
+
+    closeJobHandle(job);
 	for (OutputPair& pair: outputVec) {
 		char c = ((const KChar*)pair.first)->c;
 		int count = ((const VCount*)pair.second)->count;

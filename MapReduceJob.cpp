@@ -39,7 +39,7 @@ void MapReduceJob::mutex_unlock(){
 }
 
 MapReduceJob::MapReduceJob(const MapReduceClient& mapReduceClient, const InputVec& inputVec,
-                           const OutputVec& outputVec, int multiThreadLevel)
+                           OutputVec& outputVec, int multiThreadLevel)
                            : client(mapReduceClient), inputVec(inputVec), outputVec(outputVec),
                            multiThreadLevel(multiThreadLevel), mutex(PTHREAD_MUTEX_INITIALIZER),
                            barrier(multiThreadLevel), jobState({UNDEFINED_STAGE, 0})
@@ -109,6 +109,7 @@ void *MapReduceJob::thread_wrapper(void *input) {
                 }
                 mapReduceJob->intermediateMap[pair.first]->push_back(pair);
                 PROGRESS_INC_CURRENT(threadContext->mapReduceJob->progress);
+                //std::cout << threadContext->mapReduceJob->progress << std::endl;
             }
         }
     }
@@ -118,9 +119,9 @@ void *MapReduceJob::thread_wrapper(void *input) {
     //
     if (threadContext->getId() == 0)
     {
-        mapReduceJob->debug();
+//        mapReduceJob->debug();
 
-        std::cout <<"reduce" << std::endl;
+//        std::cout <<"reduce" << std::endl;
         PROGRESS_SET(threadContext->mapReduceJob->progress, REDUCE_STAGE, 0, threadContext->mapReduceJob->getIntermediateMapLen());
     }
     mapReduceJob->apply_barrier();
@@ -128,14 +129,17 @@ void *MapReduceJob::thread_wrapper(void *input) {
     mapReduceJob->mutex_lock();
     while (!mapReduceJob->intermediateMap.empty()){
         auto intermediatePair = mapReduceJob->intermediateMap.begin();
-        PROGRESS_ADD_CURRENT(threadContext->mapReduceJob->progress, intermediatePair->second->size());
+        int size = intermediatePair->second->size();
+
 
         mapReduceJob->intermediateMap.erase(intermediatePair);
         mapReduceJob->mutex_unlock();
         mapReduceJob->getClient().reduce(intermediatePair->second, threadContext);
+        mapReduceJob->mutex_lock();
+
         delete intermediatePair->second;
         intermediatePair->second = nullptr;
-        mapReduceJob->mutex_lock();
+        PROGRESS_ADD_CURRENT(threadContext->mapReduceJob->progress, size);
 //        mapReduceJob->debug();
 //        std::cout << threadContext->mapReduceJob->progress << std::endl;
 
@@ -148,7 +152,6 @@ void *MapReduceJob::thread_wrapper(void *input) {
 
     mapReduceJob->mutex_unlock();
     mapReduceJob->apply_barrier();
-    return (void*)0;
     return threadContext;
 }
 
@@ -189,10 +192,10 @@ int MapReduceJob::getIntermediateVecLen(){
 void MapReduceJob::waitForJob() {
     for (int tid = 0; tid < multiThreadLevel; tid++)
     {
-        int currReturn;
-        std::cout << "trying to join thread " << tid << "..." << std::endl;
-        currReturn = pthread_join(threads[tid], nullptr);
-        std::cout << "result join thread " << tid << ": " << currReturn << std::endl;
+        //int currReturn;
+        //std::cout << "trying to join thread " << tid << "..." << std::endl;
+        pthread_join(threads[tid], nullptr);
+        //std::cout << "result join thread " << tid << ": " << currReturn << std::endl;
     }
 }
 

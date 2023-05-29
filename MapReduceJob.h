@@ -44,7 +44,7 @@ class MapReduceJob {
 public:
     const MapReduceClient &client;
     InputVec inputVec;
-    OutputVec outputVec;
+    OutputVec &outputVec;
     std::map<K2*, IntermediateVec*, k2PtrComparison> intermediateMap;
 
 private:
@@ -59,7 +59,7 @@ private:
 
 public:
     MapReduceJob(const MapReduceClient& mapReduceClient, const InputVec& inputVec,
-                 const OutputVec& outputVec, int multiThreadLevel);
+                 OutputVec& outputVec, int multiThreadLevel);
     ~MapReduceJob();
 
     void waitForJob();
