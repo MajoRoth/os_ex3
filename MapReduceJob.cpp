@@ -42,7 +42,7 @@ MapReduceJob::MapReduceJob(const MapReduceClient& mapReduceClient, const InputVe
                            OutputVec& outputVec, int multiThreadLevel)
                            : client(mapReduceClient), inputVec(inputVec), outputVec(outputVec),
                            multiThreadLevel(multiThreadLevel), mutex(PTHREAD_MUTEX_INITIALIZER),
-                           barrier(multiThreadLevel), jobState({UNDEFINED_STAGE, 0})
+                           barrier(multiThreadLevel), jobState({UNDEFINED_STAGE, 0}),hasWaited(false)
 {
     threads = new pthread_t[multiThreadLevel];
     contexts = new ThreadContext[multiThreadLevel];
@@ -60,6 +60,7 @@ MapReduceJob::~MapReduceJob()
     threads = nullptr;
     delete[] contexts;
     contexts = nullptr;
+    pthread_mutex_destroy(&mutex);
 }
 
 void *MapReduceJob::thread_wrapper(void *input) {
@@ -152,6 +153,8 @@ void *MapReduceJob::thread_wrapper(void *input) {
 
     mapReduceJob->mutex_unlock();
     mapReduceJob->apply_barrier();
+    std::cout << "Thread " << threadContext->getId() << " finished." << std::endl;
+
     return threadContext;
 }
 
@@ -190,12 +193,14 @@ int MapReduceJob::getIntermediateVecLen(){
 }
 
 void MapReduceJob::waitForJob() {
-    for (int tid = 0; tid < multiThreadLevel; tid++)
+    std::cout << "Now waiting for job" << std::endl;
+    if (!hasWaited)
     {
-        //int currReturn;
-        //std::cout << "trying to join thread " << tid << "..." << std::endl;
-        pthread_join(threads[tid], nullptr);
-        //std::cout << "result join thread " << tid << ": " << currReturn << std::endl;
+        for (int tid = 0; tid < multiThreadLevel; tid++)
+        {
+            pthread_join(threads[tid], nullptr);
+        }
+        hasWaited = true;
     }
 }
 
@@ -220,7 +225,7 @@ JobState MapReduceJob::getJobState() {
 void MapReduceJob::debug() {
     std::cout << "DEBUG" << std::endl;
     for (const auto& pair: intermediateMap) {
-        std::cout << static_cast<KChar *>(pair.first)->c << std::endl;
+        //std::cout << static_cast<KChar *>(pair.first)->c << std::endl;
         for (const auto& int_pair: *pair.second){
             std::cout << "(" << static_cast<KChar *>(int_pair.first)->c << ", " << static_cast<VCount *>(int_pair.second)->count << "), ";
         }
