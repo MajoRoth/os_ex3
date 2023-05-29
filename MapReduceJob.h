@@ -83,7 +83,6 @@ public:
     int getMultiThreadLevel(){
         return multiThreadLevel;
     }
-    float getPercentage();
 
 
     InputPair popInputPair(){
@@ -91,49 +90,21 @@ public:
         inputVec.pop_back();
         return inputPair;
     }
+
+    void mutex_unlock();
+    void mutex_lock();
     void debug();
 
 
 
 private:
-    void mutex_unlock();
-    void mutex_lock();
     void apply_barrier();
     static void *thread_wrapper(void *input);
 
-    int getIntermediateMapLen();
+    int getAfterShuffleVecLen();
     int getIntermediateVecLen();
 
-
-
-
-//    stage_t getAtomicStage(){
-//        unsigned long long MASK = 3;
-//        return (stage_t) (atomic_variable & MASK);
-//    }
-//    int getAtomicSize(){
-//        unsigned long long MASK = 8589934588;
-//        return (stage_t) (atomic_variable & MASK) >> 2;
-//    }
-//    int getAtomicCurrentSize(){
-//        unsigned long long MASK = 18446744065119617024;
-//        return (stage_t) (atomic_variable & MASK) >> 33;
-//    }
-//
-//    int incAtomicCurrentSize(){
-//
-//    }
-//
-//    void setAtomicStage(stage_t stage){
-//
-//    }
-//    void setAtomicSize(){
-//
-//    }
-//    void setAtomicCurrentSize(){
-//
-//    }
-    bool allIntermediateVecsAreEmpty();
+    int allIntermediateVecsAreEmpty();
 };
 
 

@@ -5,29 +5,29 @@
 #include <unistd.h>
 #include <iostream>
 
-//class VString : public V1 {
-//public:
-//	VString(std::string content) : content(content) { }
-//	std::string content;
-//};
-//
-//class KChar : public K2, public K3{
-//public:
-//	KChar(char c) : c(c) { }
-//	virtual bool operator<(const K2 &other) const {
-//		return c < static_cast<const KChar&>(other).c;
-//	}
-//	virtual bool operator<(const K3 &other) const {
-//		return c < static_cast<const KChar&>(other).c;
-//	}
-//	char c;
-//};
-//
-//class VCount : public V2, public V3{
-//public:
-//	VCount(int count) : count(count) { }
-//	int count;
-//};
+class VString : public V1 {
+public:
+	VString(std::string content) : content(content) { }
+	std::string content;
+};
+
+class KChar : public K2, public K3{
+public:
+	KChar(char c) : c(c) { }
+	virtual bool operator<(const K2 &other) const {
+		return c < static_cast<const KChar&>(other).c;
+	}
+	virtual bool operator<(const K3 &other) const {
+		return c < static_cast<const KChar&>(other).c;
+	}
+	char c;
+};
+
+class VCount : public V2, public V3{
+public:
+	VCount(int count) : count(count) { }
+	int count;
+};
 
 
 class CounterClient : public MapReduceClient {
@@ -50,14 +50,14 @@ public:
 		}
 	}
 
-	virtual void reduce(const IntermediateVec* pairs, 
+	virtual void reduce(const IntermediateVec* pairs,
 		void* context) const {
-        std::cout <<"reducing " <<std::endl;
+//        std::cout <<"reducing " <<std::endl;
 		const char c = static_cast<const KChar*>(pairs->at(0).first)->c;
 		int count = 0;
 		for(const IntermediatePair& pair: *pairs) {
 			count += static_cast<const VCount*>(pair.second)->count;
-            std::cout <<"Deleting " << c <<std::endl;
+//            std::cout <<"Deleting " << c <<std::endl;
 
             delete pair.first;
 			delete pair.second;
@@ -87,18 +87,18 @@ int main(int argc, char** argv)
     JobState last_state={UNDEFINED_STAGE,0};
 	JobHandle job = startMapReduceJob(client, inputVec, outputVec, 4);
 	getJobState(job, &state);
-    
+
 	while (state.stage != REDUCE_STAGE || state.percentage != 100.0)
 	{
         if (last_state.stage != state.stage || last_state.percentage != state.percentage){
-            printf("stage %d, %f%% \n", 
+            printf("stage %d, %f%% \n",
 			state.stage, state.percentage);
         }
 		usleep(10000);
         last_state = state;
 		getJobState(job, &state);
 	}
-	printf("stage %d, %f%% \n", 
+	printf("stage %d, %f%% \n",
 			state.stage, state.percentage);
 	printf("Done!\n");
     std::cout << "outputVec Legnth: " << outputVec.size() << std::endl;
@@ -107,13 +107,13 @@ int main(int argc, char** argv)
 	for (OutputPair& pair: outputVec) {
 		char c = ((const KChar*)pair.first)->c;
 		int count = ((const VCount*)pair.second)->count;
-		printf("The character %c appeared %d time%s\n", 
+		printf("The character %c appeared %d time%s\n",
 			c, count, count > 1 ? "s" : "");
         std::cout <<"Deleting " << c <<std::endl;
 		delete pair.first;
 		delete pair.second;
 	}
-	
+
 	return 0;
 }
 
