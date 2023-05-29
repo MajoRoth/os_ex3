@@ -55,6 +55,7 @@ private:
     Barrier barrier;
     JobState jobState;
     std::atomic<uint64_t> progress;
+    bool hasWaited;
 
 
 public:
