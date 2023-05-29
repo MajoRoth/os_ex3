@@ -15,6 +15,17 @@
 
 class MapReduceJob;
 
+struct
+{
+    bool operator()(std::pair<K2*, V2*> a, std::pair<K2*, V2*> b) const { return *(a.first) < *(b.first); }
+}
+pairPtrComparison;
+
+struct k2PtrComparison
+{
+    bool operator()(K2* const&a, K2* const&b) const { return *a < *b; }
+};
+
 class ThreadContext {
 public:
     int id;
@@ -34,7 +45,7 @@ public:
     const MapReduceClient &client;
     InputVec inputVec;
     OutputVec outputVec;
-    std::map<K2 *, IntermediateVec *> intermediateMap;
+    std::map<K2*, IntermediateVec*, k2PtrComparison> intermediateMap;
 
 private:
     int multiThreadLevel;

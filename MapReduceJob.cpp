@@ -5,7 +5,7 @@
 #include "MapReduceJob.h"
 #include "utils.h"
 #include "MapReduceClient.h"
-
+#include <algorithm>
 
 //#include <pthread.h>
 
@@ -21,6 +21,7 @@
 #define PROGRESS_GET_STATE(x) (x.load()>>62)
 
 #define PROGRESS_INC_CURRENT(x) (x += 0x80000000)
+#define PROGRESS_ADD_CURRENT(x, a) (x += static_cast<uint64_t>(a)<<31)
 #define PROGRESS_SET(x, state, current, total) (x = (static_cast<uint64_t>(state)<<62) + (static_cast<uint64_t>(current)<<31) + total)
 
 
@@ -56,7 +57,9 @@ MapReduceJob::~MapReduceJob()
 {
     //todo: what else?
     delete[] threads;
+    threads = nullptr;
     delete[] contexts;
+    contexts = nullptr;
 }
 
 void *MapReduceJob::thread_wrapper(void *input) {
@@ -84,10 +87,7 @@ void *MapReduceJob::thread_wrapper(void *input) {
     mapReduceJob->mutex_unlock(); // Finished Map
 
     mapReduceJob->apply_barrier(); // Applying barrier to perform shuffle
-    //
-    //  SORT
-    //
-    // todo SIZE OF INTERMIDATE VEC?
+
     //
     //  SHUFFLE
     //
@@ -128,20 +128,19 @@ void *MapReduceJob::thread_wrapper(void *input) {
     mapReduceJob->mutex_lock();
     while (!mapReduceJob->intermediateMap.empty()){
         auto intermediatePair = mapReduceJob->intermediateMap.begin();
+        PROGRESS_ADD_CURRENT(threadContext->mapReduceJob->progress, intermediatePair->second->size());
+
         mapReduceJob->intermediateMap.erase(intermediatePair);
         mapReduceJob->mutex_unlock();
         mapReduceJob->getClient().reduce(intermediatePair->second, threadContext);
+        delete intermediatePair->second;
+        intermediatePair->second = nullptr;
         mapReduceJob->mutex_lock();
-        PROGRESS_INC_CURRENT(threadContext->mapReduceJob->progress);
+//        mapReduceJob->debug();
+//        std::cout << threadContext->mapReduceJob->progress << std::endl;
+
     }
 
-    mapReduceJob->apply_barrier();
-    if (threadContext->getId() == 0)
-    {
-        mapReduceJob->debug();
-        // DEBUG FUNCTIONS THAT PRINTS INTERMIDATE VECTOR, INTERMEDIATE MAP
-    }
-    mapReduceJob->apply_barrier();
 
 
 
@@ -149,6 +148,7 @@ void *MapReduceJob::thread_wrapper(void *input) {
 
     mapReduceJob->mutex_unlock();
     mapReduceJob->apply_barrier();
+    return (void*)0;
     return threadContext;
 }
 
@@ -189,7 +189,10 @@ int MapReduceJob::getIntermediateVecLen(){
 void MapReduceJob::waitForJob() {
     for (int tid = 0; tid < multiThreadLevel; tid++)
     {
-        pthread_join(threads[tid], nullptr);
+        int currReturn;
+        std::cout << "trying to join thread " << tid << "..." << std::endl;
+        currReturn = pthread_join(threads[tid], nullptr);
+        std::cout << "result join thread " << tid << ": " << currReturn << std::endl;
     }
 }
 
