@@ -46,6 +46,7 @@ public:
     InputVec inputVec;
     OutputVec &outputVec;
     std::map<K2*, IntermediateVec*, k2PtrComparison> intermediateMap;
+    std::vector<IntermediateVec> afterShuffleVec;
 
 private:
     int multiThreadLevel;
@@ -56,6 +57,8 @@ private:
     JobState jobState;
     std::atomic<uint64_t> progress;
     bool hasWaited;
+    bool jobFinished;
+
 
 
 public:
@@ -130,6 +133,7 @@ private:
 //    void setAtomicCurrentSize(){
 //
 //    }
+    bool allIntermediateVecsAreEmpty();
 };
 
 

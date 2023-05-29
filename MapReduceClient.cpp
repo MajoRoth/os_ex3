@@ -52,11 +52,14 @@ public:
 
 	virtual void reduce(const IntermediateVec* pairs, 
 		void* context) const {
+        std::cout <<"reducing " <<std::endl;
 		const char c = static_cast<const KChar*>(pairs->at(0).first)->c;
 		int count = 0;
 		for(const IntermediatePair& pair: *pairs) {
 			count += static_cast<const VCount*>(pair.second)->count;
-			delete pair.first;
+            std::cout <<"Deleting " << c <<std::endl;
+
+            delete pair.first;
 			delete pair.second;
 		}
 		KChar* k3 = new KChar(c);
@@ -91,7 +94,7 @@ int main(int argc, char** argv)
             printf("stage %d, %f%% \n", 
 			state.stage, state.percentage);
         }
-		usleep(1000);
+		usleep(10000);
         last_state = state;
 		getJobState(job, &state);
 	}
@@ -106,6 +109,7 @@ int main(int argc, char** argv)
 		int count = ((const VCount*)pair.second)->count;
 		printf("The character %c appeared %d time%s\n", 
 			c, count, count > 1 ? "s" : "");
+        std::cout <<"Deleting " << c <<std::endl;
 		delete pair.first;
 		delete pair.second;
 	}

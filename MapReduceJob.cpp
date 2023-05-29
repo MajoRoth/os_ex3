@@ -63,6 +63,18 @@ MapReduceJob::~MapReduceJob()
     pthread_mutex_destroy(&mutex);
 }
 
+bool MapReduceJob::allIntermediateVecsAreEmpty()
+{
+    for (int i = 0; i < multiThreadLevel; i++)
+    {
+        if (!contexts[i].intermediateVec.empty())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 void *MapReduceJob::thread_wrapper(void *input) {
     // map - takes <k1, v1> from input and apply map function
     auto threadContext = (ThreadContext *) input;
@@ -85,6 +97,8 @@ void *MapReduceJob::thread_wrapper(void *input) {
         PROGRESS_INC_CURRENT(threadContext->mapReduceJob->progress);
     }
 
+    std::sort(threadContext->intermediateVec.begin(), threadContext->intermediateVec.end(), pairPtrComparison);
+
     mapReduceJob->mutex_unlock(); // Finished Map
 
     mapReduceJob->apply_barrier(); // Applying barrier to perform shuffle
@@ -92,28 +106,73 @@ void *MapReduceJob::thread_wrapper(void *input) {
     //
     //  SHUFFLE
     //
+
     if (threadContext->getId() == 0)
     {
+        mapReduceJob->debug();
         PROGRESS_SET(threadContext->mapReduceJob->progress, SHUFFLE_STAGE, 0, threadContext->mapReduceJob->getIntermediateVecLen());
-    }
-    mapReduceJob->apply_barrier();
-    if (threadContext->getId() == 0){
-        // Shuffle
-        for (int i=0; i < mapReduceJob->getMultiThreadLevel(); i++){
-            IntermediateVec intermediateVec = mapReduceJob->contexts[i].intermediateVec;
-            for (auto pair: intermediateVec) {
-                if (mapReduceJob->intermediateMap.find(pair.first) == mapReduceJob->intermediateMap.end()){
-                    mapReduceJob->intermediateMap.insert({
-                        pair.first,
-                        new IntermediateVec ()
-                    });
+
+        while (!mapReduceJob->allIntermediateVecsAreEmpty())
+        {
+            mapReduceJob->debug();
+            K2* biggestKey = mapReduceJob->contexts[0].intermediateVec.back().first;
+            for (int i = 1; i < mapReduceJob->getMultiThreadLevel(); i++)
+            {
+
+                IntermediateVec intermediateVec = mapReduceJob->contexts[i].intermediateVec;
+                if (!intermediateVec.empty() && *biggestKey < *(intermediateVec.back().first))
+                {
+                    biggestKey = intermediateVec.back().first;
                 }
-                mapReduceJob->intermediateMap[pair.first]->push_back(pair);
-                PROGRESS_INC_CURRENT(threadContext->mapReduceJob->progress);
-                //std::cout << threadContext->mapReduceJob->progress << std::endl;
             }
+
+            IntermediateVec ivec;
+            K2* currentKey;
+            for (int i = 0; i < mapReduceJob->getMultiThreadLevel(); i++)
+            {
+                if (mapReduceJob->contexts[i].intermediateVec.empty())
+                {
+                    continue;
+                }
+                currentKey = mapReduceJob->contexts[i].intermediateVec.back().first;
+                if (!(*currentKey < *biggestKey || *biggestKey < *currentKey))
+                {
+                    ivec.push_back(mapReduceJob->contexts[i].intermediateVec.back());
+                    PROGRESS_INC_CURRENT(mapReduceJob->progress);
+                    mapReduceJob->contexts[i].intermediateVec.pop_back();
+                }
+            }
+            mapReduceJob->afterShuffleVec.push_back(ivec);
+
         }
+
     }
+
+
+
+
+//    if (threadContext->getId() == 0)
+//    {
+//        PROGRESS_SET(threadContext->mapReduceJob->progress, SHUFFLE_STAGE, 0, threadContext->mapReduceJob->getIntermediateVecLen());
+//    }
+//    mapReduceJob->apply_barrier();
+//    if (threadContext->getId() == 0){
+//        // Shuffle
+//        for (int i=0; i < mapReduceJob->getMultiThreadLevel(); i++){
+//            IntermediateVec intermediateVec = mapReduceJob->contexts[i].intermediateVec;
+//            for (auto pair: intermediateVec) {
+//                if (mapReduceJob->intermediateMap.find(pair.first) == mapReduceJob->intermediateMap.end()){
+//                    mapReduceJob->intermediateMap.insert({
+//                        pair.first,
+//                        new IntermediateVec ()
+//                    });
+//                }
+//                mapReduceJob->intermediateMap[pair.first]->push_back(pair);
+//                PROGRESS_INC_CURRENT(threadContext->mapReduceJob->progress);
+//                //std::cout << threadContext->mapReduceJob->progress << std::endl;
+//            }
+//        }
+//    }
     mapReduceJob->apply_barrier();
     //
     //  REDUCE
@@ -128,18 +187,18 @@ void *MapReduceJob::thread_wrapper(void *input) {
     mapReduceJob->apply_barrier();
 
     mapReduceJob->mutex_lock();
-    while (!mapReduceJob->intermediateMap.empty()){
-        auto intermediatePair = mapReduceJob->intermediateMap.begin();
-        int size = intermediatePair->second->size();
+    while (!mapReduceJob->afterShuffleVec.empty()){
+        IntermediateVec reduceIntermediateVec = mapReduceJob->afterShuffleVec.back();
+        mapReduceJob->afterShuffleVec.pop_back();
+        int size = reduceIntermediateVec.size();
+        mapReduceJob->debug();
 
 
-        mapReduceJob->intermediateMap.erase(intermediatePair);
+
         mapReduceJob->mutex_unlock();
-        mapReduceJob->getClient().reduce(intermediatePair->second, threadContext);
+        mapReduceJob->getClient().reduce(&reduceIntermediateVec, threadContext);
         mapReduceJob->mutex_lock();
 
-        delete intermediatePair->second;
-        intermediatePair->second = nullptr;
         PROGRESS_ADD_CURRENT(threadContext->mapReduceJob->progress, size);
 //        mapReduceJob->debug();
 //        std::cout << threadContext->mapReduceJob->progress << std::endl;
@@ -153,7 +212,13 @@ void *MapReduceJob::thread_wrapper(void *input) {
 
     mapReduceJob->mutex_unlock();
     mapReduceJob->apply_barrier();
+    if (threadContext->getId() == 0)
+    {
+        mapReduceJob->jobFinished = true;
+    }
+
     std::cout << "Thread " << threadContext->getId() << " finished." << std::endl;
+
 
     return threadContext;
 }
@@ -174,8 +239,8 @@ float MapReduceJob::getPercentage(){
 int MapReduceJob::getIntermediateMapLen(){
     mutex_lock();
     int size = 0;
-    for (auto &vec:  intermediateMap){
-        size += vec.second->size();
+    for (auto &vec:  afterShuffleVec){
+        size += vec.size();
     }
     mutex_unlock();
     return size;
@@ -194,7 +259,7 @@ int MapReduceJob::getIntermediateVecLen(){
 
 void MapReduceJob::waitForJob() {
     std::cout << "Now waiting for job" << std::endl;
-    if (!hasWaited)
+    if (!hasWaited && !jobFinished)
     {
         for (int tid = 0; tid < multiThreadLevel; tid++)
         {
@@ -224,10 +289,10 @@ JobState MapReduceJob::getJobState() {
 
 void MapReduceJob::debug() {
     std::cout << "DEBUG" << std::endl;
-    for (const auto& pair: intermediateMap) {
+    for (const auto& v: afterShuffleVec) {
         //std::cout << static_cast<KChar *>(pair.first)->c << std::endl;
-        for (const auto& int_pair: *pair.second){
-            std::cout << "(" << static_cast<KChar *>(int_pair.first)->c << ", " << static_cast<VCount *>(int_pair.second)->count << "), ";
+        for (const auto& pair: v){
+            std::cout << "(" << static_cast<KChar *>(pair.first)->c << ", " << static_cast<VCount *>(pair.second)->count << "), ";
         }
         std::cout << std::endl << "-------------" << std::endl;
     }
