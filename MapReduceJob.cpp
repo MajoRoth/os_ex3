@@ -22,7 +22,7 @@
 
 #define PROGRESS_INC_CURRENT(x) (x += 0x80000000)
 #define PROGRESS_ADD_CURRENT(x, a) (x += static_cast<uint64_t>(a)<<31)
-#define PROGRESS_SET(x, state, current, total) (x = (static_cast<uint64_t>(state)<<62) + (static_cast<uint64_t>(current)<<31) + total)
+#define PROGRESS_SET(x, state, current, total) ((static_cast<uint64_t>(state)<<62) + (static_cast<uint64_t>(current)<<31) + total)
 
 
 
@@ -86,7 +86,10 @@ void *MapReduceJob::thread_wrapper(void *input) {
     //
     if (threadContext->getId() == 0)
     {
-        PROGRESS_SET(threadContext->mapReduceJob->progress, MAP_STAGE, 0, threadContext->mapReduceJob->inputVec.size());
+        threadContext->mapReduceJob->mutex_lock();
+        auto temp = PROGRESS_SET(threadContext->mapReduceJob->progress, MAP_STAGE, 0, threadContext->mapReduceJob->inputVec.size());
+        threadContext->mapReduceJob->progress = temp;
+        threadContext->mapReduceJob->mutex_unlock();
     }
     mapReduceJob->apply_barrier();
     mapReduceJob->mutex_lock();
@@ -105,14 +108,16 @@ void *MapReduceJob::thread_wrapper(void *input) {
 
     mapReduceJob->apply_barrier(); // Applying barrier to perform shuffle
 
-
     //
     //  SHUFFLE
     //
     if (threadContext->getId() == 0)
     {
-        PROGRESS_SET(threadContext->mapReduceJob->progress, SHUFFLE_STAGE, 0, threadContext->mapReduceJob->getIntermediateVecLen());
-
+        threadContext->mapReduceJob->mutex_lock();
+        auto temp = PROGRESS_SET(threadContext->mapReduceJob->progress, SHUFFLE_STAGE, 0, threadContext->mapReduceJob->getIntermediateVecLen());
+        threadContext->mapReduceJob->progress = temp;
+        threadContext->mapReduceJob->mutex_unlock();
+        std::cout << "set state to 2" << std::endl;
         int firstNonEmpty = 0;
         while ((firstNonEmpty = mapReduceJob->allIntermediateVecsAreEmpty()) != -1)
         {
@@ -154,7 +159,10 @@ void *MapReduceJob::thread_wrapper(void *input) {
     //
     if (threadContext->getId() == 0)
     {
-        PROGRESS_SET(threadContext->mapReduceJob->progress, REDUCE_STAGE, 0, threadContext->mapReduceJob->getAfterShuffleVecLen());
+        threadContext->mapReduceJob->mutex_lock();
+        auto temp = PROGRESS_SET(threadContext->mapReduceJob->progress, REDUCE_STAGE, 0, threadContext->mapReduceJob->getAfterShuffleVecLen());
+        threadContext->mapReduceJob->progress = temp;
+        threadContext->mapReduceJob->mutex_unlock();
     }
     mapReduceJob->apply_barrier();
 
@@ -219,15 +227,20 @@ void MapReduceJob::apply_barrier() {
 }
 
 JobState MapReduceJob::getJobState() {
+    mutex_lock();
      jobState.stage = static_cast<stage_t>(PROGRESS_GET_STATE(progress));
      if (jobState.stage == UNDEFINED_STAGE)
      {
+         std::cout << "ERROR: undefined state" << std::endl;
          jobState.percentage = 0;
      }
      else
      {
+         //std::cout << "State: " << PROGRESS_GET_STATE(progress) << " Current: " << PROGRESS_GET_CURRENT(progress) << " Total: " << PROGRESS_GET_TOTAL(progress) << std::endl;
          jobState.percentage = static_cast<float>(100) * PROGRESS_GET_CURRENT(progress) / PROGRESS_GET_TOTAL(progress);
+         std::cout << "This means percentage of " << jobState.percentage << std::endl;
      }
+     mutex_unlock();
      return jobState;
 }
 
