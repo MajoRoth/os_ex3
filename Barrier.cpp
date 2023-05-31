@@ -17,7 +17,6 @@ Barrier::~Barrier()
     int i = pthread_mutex_destroy(&mutex);
 	if (i != 0) {
 		fprintf(stderr, "[[Barrier]] error on pthread_mutex_destroy");
-        printf("%d", 1 / 0);
 		exit(1);
 	}
 	if (pthread_cond_destroy(&cv) != 0){
