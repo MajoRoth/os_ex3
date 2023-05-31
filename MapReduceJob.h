@@ -57,7 +57,6 @@ private:
     JobState jobState;
     std::atomic<uint64_t> progress;
     bool hasWaited;
-    bool jobFinished;
 
 
 

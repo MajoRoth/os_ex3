@@ -12,8 +12,12 @@ Barrier::Barrier(int numThreads)
 
 Barrier::~Barrier()
 {
-	if (pthread_mutex_destroy(&mutex) != 0) {
+    pthread_mutex_lock(&mutex);
+    pthread_mutex_unlock(&mutex);
+    int i = pthread_mutex_destroy(&mutex);
+	if (i != 0) {
 		fprintf(stderr, "[[Barrier]] error on pthread_mutex_destroy");
+        printf("%d", 1 / 0);
 		exit(1);
 	}
 	if (pthread_cond_destroy(&cv) != 0){
@@ -29,6 +33,7 @@ void Barrier::barrier()
 		fprintf(stderr, "[[Barrier]] error on pthread_mutex_lock");
 		exit(1);
 	}
+//    printf("LOCK\n");
 	if (++count < numThreads) {
 		if (pthread_cond_wait(&cv, &mutex) != 0){
 			fprintf(stderr, "[[Barrier]] error on pthread_cond_wait");
@@ -41,6 +46,7 @@ void Barrier::barrier()
 			exit(1);
 		}
 	}
+//    printf("UNLOCK\n");
 	if (pthread_mutex_unlock(&mutex) != 0) {
 		fprintf(stderr, "[[Barrier]] error on pthread_mutex_unlock");
 		exit(1);

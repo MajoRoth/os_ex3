@@ -30,12 +30,15 @@ void MapReduceJob::mutex_lock(){
     if(pthread_mutex_lock(&mutex)){
         error(SYS_ERR, "pthread mutex lock");
     }
+    //std::cout << "Mutex lock" << std::endl;
 }
 
 void MapReduceJob::mutex_unlock(){
     if(pthread_mutex_unlock(&mutex)){
         error(SYS_ERR, "pthread mutex unlock");
     }
+    //std::cout << "Mutex unlock" << std::endl;
+
 }
 
 MapReduceJob::MapReduceJob(const MapReduceClient& mapReduceClient, const InputVec& inputVec,
@@ -43,7 +46,7 @@ MapReduceJob::MapReduceJob(const MapReduceClient& mapReduceClient, const InputVe
                            : client(mapReduceClient), inputVec(inputVec), outputVec(outputVec),
                            multiThreadLevel(multiThreadLevel), mutex(PTHREAD_MUTEX_INITIALIZER),
                            barrier(multiThreadLevel), jobState({UNDEFINED_STAGE, 0}),
-                           hasWaited(false), jobFinished(false)
+                           hasWaited(false)
 {
     threads = new pthread_t[multiThreadLevel];
     contexts = new ThreadContext[multiThreadLevel];
@@ -58,11 +61,11 @@ MapReduceJob::MapReduceJob(const MapReduceClient& mapReduceClient, const InputVe
 }
 MapReduceJob::~MapReduceJob()
 {
+    pthread_mutex_destroy(&mutex);
     delete[] threads;
     threads = nullptr;
     delete[] contexts;
     contexts = nullptr;
-    pthread_mutex_destroy(&mutex); // TODO erel i dont think we need it because we are not creating it using new
 }
 
 int MapReduceJob::allIntermediateVecsAreEmpty()
@@ -132,6 +135,7 @@ void *MapReduceJob::thread_wrapper(void *input) {
             }
 
 
+
             IntermediateVec ivec;
             K2* currentKey;
             for (int i = 0; i < mapReduceJob->getMultiThreadLevel(); i++)
@@ -140,13 +144,28 @@ void *MapReduceJob::thread_wrapper(void *input) {
                 {
                     continue;
                 }
-                currentKey = mapReduceJob->contexts[i].intermediateVec.back().first;
-                if (!(*currentKey < *biggestKey || *biggestKey < *currentKey))
-                {
-                    ivec.push_back(mapReduceJob->contexts[i].intermediateVec.back());
-                    PROGRESS_INC_CURRENT(mapReduceJob->progress);
-                    mapReduceJob->contexts[i].intermediateVec.pop_back();
+                while (true){
+                    if (mapReduceJob->contexts[i].intermediateVec.empty())
+                    {
+                        break;
+                    }
+                    currentKey = mapReduceJob->contexts[i].intermediateVec.back().first;
+                    if (!(*currentKey < *biggestKey || *biggestKey < *currentKey))
+                    {
+                        ivec.push_back(mapReduceJob->contexts[i].intermediateVec.back());
+                        PROGRESS_INC_CURRENT(mapReduceJob->progress);
+                        mapReduceJob->contexts[i].intermediateVec.pop_back();
+                    } else{
+                        break;
+                    }
                 }
+//                currentKey = mapReduceJob->contexts[i].intermediateVec.back().first;
+//                if (!(*currentKey < *biggestKey || *biggestKey < *currentKey))
+//                {
+//                    ivec.push_back(mapReduceJob->contexts[i].intermediateVec.back());
+//                    PROGRESS_INC_CURRENT(mapReduceJob->progress);
+//                    mapReduceJob->contexts[i].intermediateVec.pop_back();
+//                }
             }
             mapReduceJob->afterShuffleVec.push_back(ivec);
         }
@@ -180,37 +199,29 @@ void *MapReduceJob::thread_wrapper(void *input) {
 
     mapReduceJob->mutex_unlock();
     mapReduceJob->apply_barrier();
-    if (threadContext->getId() == 0)
-    {
-        mapReduceJob->jobFinished = true;
-    }
 
     return threadContext;
 }
 
 int MapReduceJob::getAfterShuffleVecLen(){
-    mutex_lock();
     int size = 0;
     for (auto &vec:  afterShuffleVec){
         size += vec.size();
     }
-    mutex_unlock();
     return size;
 }
 
 int MapReduceJob::getIntermediateVecLen(){
-    mutex_lock();
 
     int size = 0;
     for (int i=0; i < multiThreadLevel; i++) {
         size += contexts[i].intermediateVec.size();
     }
-    mutex_unlock();
     return size;
 }
 
 void MapReduceJob::waitForJob() {
-    if (!hasWaited && !jobFinished)
+    if (!hasWaited)
     {
         for (int tid = 0; tid < multiThreadLevel; tid++)
         {
@@ -238,7 +249,7 @@ JobState MapReduceJob::getJobState() {
      {
          //std::cout << "State: " << PROGRESS_GET_STATE(progress) << " Current: " << PROGRESS_GET_CURRENT(progress) << " Total: " << PROGRESS_GET_TOTAL(progress) << std::endl;
          jobState.percentage = static_cast<float>(100) * PROGRESS_GET_CURRENT(progress) / PROGRESS_GET_TOTAL(progress);
-         std::cout << "This means percentage of " << jobState.percentage << std::endl;
+         //std::cout << "This means percentage of " << jobState.percentage << std::endl;
      }
      mutex_unlock();
      return jobState;
