@@ -1,19 +1,24 @@
-erel, amitroth
-Erel Nahum (325177715), Amit Roth (213212798)
-EX: 3
+## cpp map reduce implementation
 
-FILES:
-MapReduceFramework.cpp -- the implementation of requested MapReduceFramework.h file
-MapReduceJob.cpp -- the main class in our project
-MapReduceJob.h -- header for MapReduceJob
-utils.cpp -- helper functions implementation
-utils.h -- helper functions header
-Barrier.c -- implementation of barrier mechanism, given by course stuff
-Barrier.h -- barrier mechanism header
-libMapReduceFramework.a -- static library that was created by the makefile
+implementation virtual memory using paging and hirarchial tables.
 
-REMARKS:
-No remarks.
+supported functions are
 
-ANSWERS:
-No questions.
+
+```
+JobHandle startMapReduceJob(const MapReduceClient& client,
+	const InputVec& inputVec, OutputVec& outputVec,
+	int multiThreadLevel);
+```
+
+```
+void waitForJob(JobHandle job);
+```
+
+```
+void getJobState(JobHandle job, JobState* state);
+```
+
+```
+void closeJobHandle(JobHandle job);
+```
