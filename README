@@ -1,6 +1,6 @@
 ## cpp map reduce implementation
 
-implementation virtual memory using paging and hirarchial tables.
+implementation of multiprogramming using map reduce algrotihm.
 
 supported functions are
 
